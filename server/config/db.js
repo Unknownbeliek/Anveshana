@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
 // In-Memory Storage Engine for Seamless Zero-Config Execution & Offline Resilience
 class InMemoryStore {
@@ -232,9 +234,47 @@ const connectDB = async () => {
     });
     isConnectedToMongo = true;
     console.log('🚀 Connected to MongoDB Atlas / Cluster successfully.');
+    await seedAuthUsers();
   } catch (err) {
     console.warn('⚠️ MongoDB connection attempt timed out or failed. Falling back to persistent in-memory store engine.');
     isConnectedToMongo = false;
+  }
+};
+
+const seedAuthUsers = async () => {
+  if (!isConnectedToMongo) return;
+
+  const usersToSeed = [
+    { loginId: 'FRM-DEL-1049', role: 'farmer', name: 'Ramesh Kumar Yadav', linkedFarmerId: 'FRM-DEL-1049', passwordEnv: 'DEMO_FARMER_PASSWORD' },
+    { loginId: 'AGT-DEL-104', role: 'agent', name: 'Village Agent 104', passwordEnv: 'DEMO_AGENT_PASSWORD' },
+    { loginId: 'QC-DEL-088', role: 'factory', name: 'QC Officer 088', passwordEnv: 'DEMO_FACTORY_PASSWORD' },
+    { loginId: 'AUD-DEL-001', role: 'auditor', name: 'Auditor 001', passwordEnv: 'DEMO_AUDITOR_PASSWORD' }
+  ];
+
+  for (const user of usersToSeed) {
+    const password = process.env[user.passwordEnv];
+    if (!password) {
+      console.warn(`⚠️ Skipping seed for ${user.loginId} - ${user.passwordEnv} not set.`);
+      continue;
+    }
+
+    try {
+      const existingUser = await User.findOne({ loginId: user.loginId });
+      if (!existingUser) {
+        const passwordHash = await bcrypt.hash(password, 10);
+        await User.create({
+          loginId: user.loginId,
+          role: user.role,
+          name: user.name,
+          linkedFarmerId: user.linkedFarmerId || null,
+          passwordHash,
+          status: 'active'
+        });
+        console.log(`✅ Seeded auth user: ${user.loginId} (${user.role})`);
+      }
+    } catch (error) {
+      console.error(`❌ Error seeding ${user.loginId}:`, error.message);
+    }
   }
 };
 

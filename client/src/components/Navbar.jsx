@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ShieldCheck, UserCheck, Store, Factory, PlayCircle, Wifi, WifiOff, RefreshCw, Radio } from 'lucide-react';
+import { ShieldCheck, UserCheck, Store, Factory, PlayCircle, Wifi, WifiOff, RefreshCw, Radio, LogOut } from 'lucide-react';
 import { getQueuedCount, syncOfflineQueue } from '../services/offlineQueue';
+import { useAuth } from '../auth/AuthContext';
 
 export default function Navbar({
   isOfflineSimulated,
@@ -12,6 +13,7 @@ export default function Navbar({
   const [offlineCount, setOfflineCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const updateCount = async () => {
     try {
@@ -43,10 +45,10 @@ export default function Navbar({
   };
 
   const navLinks = [
-    { to: '/farmer', label: 'Farmer Passbook', icon: UserCheck, badge: null },
-    { to: '/agent', label: 'Village Intake PWA', icon: Store, badge: offlineCount > 0 ? `${offlineCount} Queued` : null },
-    { to: '/factory', label: 'Chilling Center QC', icon: Factory, badge: null },
-    { to: '/auditor', label: 'Auditor Command', icon: ShieldCheck, badge: 'Live WSS' }
+    { to: '/farmer', label: 'Farmer Passbook', icon: UserCheck, badge: null, role: 'farmer' },
+    { to: '/agent', label: 'Village Intake PWA', icon: Store, badge: offlineCount > 0 ? `${offlineCount} Queued` : null, role: 'agent' },
+    { to: '/factory', label: 'Chilling Center QC', icon: Factory, badge: null, role: 'factory' },
+    { to: '/auditor', label: 'Auditor Command', icon: ShieldCheck, badge: 'Live WSS', role: 'auditor' }
   ];
 
   return (
@@ -55,7 +57,7 @@ export default function Navbar({
         <div className="flex items-center justify-between h-16">
           
           {/* Logo & Title */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/auditor')}>
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 p-[1.5px] shadow-lg shadow-blue-500/20">
               <div className="w-full h-full bg-[#131315] rounded-[10px] flex items-center justify-center">
                 <img src="/favicon.svg" alt="Anveshana Logo" className="w-7 h-7" />
@@ -156,6 +158,18 @@ export default function Navbar({
               <span className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-emerald-400 animate-pulse' : 'bg-crimson-alert'}`}></span>
               <span>{socketConnected ? 'WSS LIVE' : 'DISCONNECTED'}</span>
             </div>
+
+            {/* Logout Button */}
+            {isAuthenticated && (
+              <button
+                onClick={() => logout()}
+                className="flex items-center space-x-1 px-2.5 py-1.5 text-zinc-400 hover:text-red-400 bg-surface-container hover:bg-red-500/10 border border-surface-border hover:border-red-500/30 rounded-lg text-xs font-semibold transition-all"
+                title="Secure Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            )}
 
           </div>
 

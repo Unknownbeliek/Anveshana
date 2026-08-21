@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const { connectDB } = require('./config/db');
 
@@ -10,6 +11,7 @@ const farmerRoutes = require('./routes/farmerRoutes');
 const milkRoutes = require('./routes/milkRoutes');
 const batchRoutes = require('./routes/batchRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,8 +19,9 @@ const server = http.createServer(app);
 // Socket.io initialization with CORS
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
   }
 });
 
@@ -26,9 +29,13 @@ const io = new Server(server, {
 app.set('socketio', io);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Request logging in development
 app.use((req, res, next) => {
@@ -43,6 +50,7 @@ app.use((req, res, next) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/milk', milkRoutes);
 app.use('/api/batch', batchRoutes);
