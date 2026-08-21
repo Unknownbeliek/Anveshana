@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import DemoScriptGuide from './components/DemoScriptGuide';
 import FarmerView from './views/FarmerView';
 import AgentView from './views/AgentView';
 import FactoryView from './views/FactoryView';
 import AuditorView from './views/AuditorView';
+import LoginView from './views/LoginView';
+import HomeView from './views/HomeView';
 import { getSocket } from './services/socket';
 import { ShieldAlert, X } from 'lucide-react';
+import { AuthProvider } from './auth/AuthContext';
+import ProtectedRoute from './auth/ProtectedRoute';
 
 export default function App() {
   const [isOfflineSimulated, setIsOfflineSimulated] = useState(false);
   const [isDemoGuideOpen, setIsDemoGuideOpen] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [globalToast, setGlobalToast] = useState(null);
+  const location = useLocation();
+  // HomeView and LoginView render their own layout — suppress the app shell on those routes
+  const isShellless = location.pathname === '/' || location.pathname === '/login';
 
   useEffect(() => {
     const socket = getSocket();
@@ -55,15 +62,18 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-[#E5E1E4] flex flex-col selection:bg-blue-600 selection:text-white">
-      
-      {/* Top Navbar with quick switcher & offline control */}
-      <Navbar
-        isOfflineSimulated={isOfflineSimulated}
-        setIsOfflineSimulated={setIsOfflineSimulated}
-        onOpenDemoGuide={() => setIsDemoGuideOpen(true)}
-        socketConnected={socketConnected}
-      />
+    <AuthProvider>
+      <div className="min-h-screen bg-[#0A0A0B] text-[#E5E1E4] flex flex-col selection:bg-blue-600 selection:text-white">
+        
+        {/* Top Navbar — hidden on home/login which have their own nav */}
+        {!isShellless && (
+          <Navbar
+            isOfflineSimulated={isOfflineSimulated}
+            setIsOfflineSimulated={setIsOfflineSimulated}
+            onOpenDemoGuide={() => setIsDemoGuideOpen(true)}
+            socketConnected={socketConnected}
+          />
+        )}
 
       {/* Global Real-Time Alert Toast */}
       {globalToast && (
@@ -85,12 +95,13 @@ export default function App() {
       {/* Main Content View Container */}
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Navigate to="/farmer" replace />} />
+          <Route path="/" element={<HomeView />} />
+          <Route path="/login" element={<LoginView />} />
           <Route path="/farmer" element={<FarmerView />} />
           <Route path="/agent" element={<AgentView isOfflineSimulated={isOfflineSimulated} />} />
           <Route path="/factory" element={<FactoryView />} />
           <Route path="/auditor" element={<AuditorView />} />
-          <Route path="*" element={<Navigate to="/farmer" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
@@ -102,14 +113,17 @@ export default function App() {
         setIsOfflineSimulated={setIsOfflineSimulated}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-surface-border py-4 bg-[#0A0A0B] text-center text-xs text-zinc-500 font-mono">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Anveshana (अन्वेषण) • Preventative Dairy Supply Chain Intelligence</span>
-          <span>Bharat Pashudhan NDLM 12-Digit Livestock Ear Tag Validation</span>
-        </div>
-      </footer>
+      {/* Footer — hidden on home/login which have their own footer */}
+      {!isShellless && (
+        <footer className="border-t border-surface-border py-4 bg-[#0A0A0B] text-center text-xs text-zinc-500 font-mono">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>Anveshana (अन्वेषण) • Preventative Dairy Supply Chain Intelligence</span>
+            <span>Bharat Pashudhan NDLM 12-Digit Livestock Ear Tag Validation</span>
+          </div>
+        </footer>
+      )}
 
     </div>
+    </AuthProvider>
   );
 }

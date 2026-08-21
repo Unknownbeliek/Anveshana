@@ -3,6 +3,7 @@ const BASE_URL = '/api';
 async function fetchJSON(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const response = await fetch(url, {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers
@@ -38,5 +39,10 @@ export const api = {
   // Analytics & Verification endpoints
   getDistrictAnalytics: () => fetchJSON('/analytics/district'),
   getAlerts: () => fetchJSON('/analytics/alerts'),
-  verifyReceipt: (payload) => fetchJSON('/analytics/verify-receipt', { method: 'POST', body: JSON.stringify(payload) })
+  verifyReceipt: (payload) => fetchJSON('/analytics/verify-receipt', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Auth endpoints
+  authLogin: (payload) => fetchJSON('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+  authMe: () => fetchJSON('/auth/me'),
+  authLogout: () => fetchJSON('/auth/logout', { method: 'POST' })
 };
