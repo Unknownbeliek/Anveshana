@@ -73,8 +73,8 @@ export default function LiveMap({ nodes = [], alerts = [], onSelectNode }) {
   return (
     <div className="relative w-full h-[480px] bg-[#0E0E10] border border-surface-border rounded-2xl overflow-hidden shadow-2xl">
       
-      {/* Background HUD Grid */}
-      <div className="absolute inset-0 hud-grid opacity-60 pointer-events-none"></div>
+      {/* Background Subtle Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-950/10 to-transparent pointer-events-none"></div>
 
       {/* Radar Overlay Effect */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-950/20 via-transparent to-transparent pointer-events-none"></div>

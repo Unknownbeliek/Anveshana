@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const { Server } = require('socket.io');
 const { connectDB } = require('./config/db');
 
@@ -35,7 +35,20 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+
+// Custom lightweight cookie parser using installed 'cookie' package
+app.use((req, res, next) => {
+  if (req.headers.cookie) {
+    try {
+      req.cookies = cookie.parse(req.headers.cookie);
+    } catch (e) {
+      req.cookies = {};
+    }
+  } else {
+    req.cookies = {};
+  }
+  next();
+});
 
 // Request logging in development
 app.use((req, res, next) => {

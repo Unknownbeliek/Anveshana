@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ShieldCheck, UserCheck, Store, Factory, PlayCircle, Wifi, WifiOff, RefreshCw, Radio, LogOut } from 'lucide-react';
+import { ShieldCheck, UserCheck, Store, Factory, PlayCircle, Wifi, WifiOff, RefreshCw, Radio, LogOut, ArrowLeft, Home } from 'lucide-react';
 import { getQueuedCount, syncOfflineQueue } from '../services/offlineQueue';
 import { useAuth } from '../auth/AuthContext';
 
@@ -56,20 +56,27 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Logo & Title */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 p-[1.5px] shadow-lg shadow-blue-500/20">
-              <div className="w-full h-full bg-[#131315] rounded-[10px] flex items-center justify-center">
-                <img src="/favicon.svg" alt="Anveshana Logo" className="w-7 h-7" />
+          {/* Logo & Title & Home Hub Button */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => navigate('/')}
+              title="Return to Main Platform Hub"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/30 text-zinc-400 hover:text-blue-300 transition-all text-xs font-mono group"
+            >
+              <Home className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">Main Hub</span>
+            </button>
+
+            <div className="h-6 w-px bg-white/10 hidden sm:block" />
+
+            <div className="flex items-center space-x-2.5 cursor-pointer" onClick={() => navigate('/')}>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-display font-bold text-base text-white tracking-tight">Anveshana</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 font-mono border border-blue-500/30">अन्वेषण</span>
+                </div>
+                <p className="text-[10px] text-zinc-400 hidden lg:block">Dairy Supply Chain Intelligence</p>
               </div>
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-display font-bold text-lg text-white tracking-tight">Anveshana</span>
-                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-mono border border-blue-500/30">अन्वेषण</span>
-                <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded bg-surface-container text-zinc-400 font-mono">v2.0-PROD</span>
-              </div>
-              <p className="text-[11px] text-zinc-400 hidden sm:block">Preventative Dairy Supply Chain Intelligence</p>
             </div>
           </div>
 
@@ -177,6 +184,13 @@ export default function Navbar({
 
         {/* Mobile Navigation Row */}
         <div className="flex md:hidden items-center justify-around py-2 border-t border-surface-border text-xs">
+          <NavLink
+            to="/"
+            className="flex flex-col items-center py-1 px-2 text-zinc-400 hover:text-white"
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5">Hub</span>
+          </NavLink>
           {navLinks.map((link) => {
             const Icon = link.icon;
             return (

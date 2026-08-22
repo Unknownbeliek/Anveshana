@@ -1,14 +1,15 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const crypto = require('crypto');
 
-// In-Memory Storage Engine for Seamless Zero-Config Execution & Offline Resilience
+// ─── In-Memory Storage Engine ───────────────────────────────────────────────
+// Provides full resilience when MongoDB is unreachable (zero-config demo mode).
 class InMemoryStore {
   constructor() {
     this.farmers = [];
     this.deposits = [];
     this.batches = [];
     this.alerts = [];
+    this.users = [];
     this.initialized = false;
   }
 
@@ -25,21 +26,13 @@ class InMemoryStore {
         village: 'Alipur Village, Delhi North',
         upiId: 'ramesh.yadav@okhdfcbank',
         purityScore: 94.5,
+        purityGrade: 'A+',
+        baseCapacity: 24,
+        dynamicCapacity: 24,
+        seasonalMultiplier: 1.0,
         cattle: [
-          {
-            earTagId: '100482910384',
-            type: 'Cow',
-            breed: 'Gir',
-            baseDailyYield: 12,
-            isLactating: true
-          },
-          {
-            earTagId: '100482910385',
-            type: 'Cow',
-            breed: 'Gir',
-            baseDailyYield: 12,
-            isLactating: true
-          }
+          { earTagId: '100482910384', type: 'Cow', breed: 'Gir', baseDailyYield: 12, isLactating: true },
+          { earTagId: '100482910385', type: 'Cow', breed: 'Gir', baseDailyYield: 12, isLactating: true }
         ],
         createdAt: new Date('2026-01-15T06:00:00.000Z')
       },
@@ -51,28 +44,14 @@ class InMemoryStore {
         village: 'Bawana Dairy Cluster, Delhi',
         upiId: 'sunitadevi@icici',
         purityScore: 88.0,
+        purityGrade: 'A',
+        baseCapacity: 40,
+        dynamicCapacity: 40,
+        seasonalMultiplier: 1.0,
         cattle: [
-          {
-            earTagId: '100938475612',
-            type: 'Buffalo',
-            breed: 'Murrah',
-            baseDailyYield: 14,
-            isLactating: true
-          },
-          {
-            earTagId: '100938475613',
-            type: 'Buffalo',
-            breed: 'Murrah',
-            baseDailyYield: 14,
-            isLactating: true
-          },
-          {
-            earTagId: '100938475614',
-            type: 'Cow',
-            breed: 'Sahiwal',
-            baseDailyYield: 12,
-            isLactating: false // Dry
-          }
+          { earTagId: '100938475612', type: 'Buffalo', breed: 'Murrah', baseDailyYield: 14, isLactating: true },
+          { earTagId: '100938475613', type: 'Buffalo', breed: 'Murrah', baseDailyYield: 14, isLactating: true },
+          { earTagId: '100938475614', type: 'Cow', breed: 'Sahiwal', baseDailyYield: 12, isLactating: false }
         ],
         createdAt: new Date('2026-02-01T08:30:00.000Z')
       },
@@ -84,21 +63,13 @@ class InMemoryStore {
         village: 'Narela Mandi Cluster, Delhi',
         upiId: 'harpreet.singh@axl',
         purityScore: 78.2,
+        purityGrade: 'B',
+        baseCapacity: 44,
+        dynamicCapacity: 44,
+        seasonalMultiplier: 1.0,
         cattle: [
-          {
-            earTagId: '200119823471',
-            type: 'Cow',
-            breed: 'Holstein Friesian Cross',
-            baseDailyYield: 22,
-            isLactating: true
-          },
-          {
-            earTagId: '200119823472',
-            type: 'Cow',
-            breed: 'Jersey Cross',
-            baseDailyYield: 22,
-            isLactating: true
-          }
+          { earTagId: '200119823471', type: 'Cow', breed: 'Holstein Friesian Cross', baseDailyYield: 22, isLactating: true },
+          { earTagId: '200119823472', type: 'Cow', breed: 'Jersey Cross', baseDailyYield: 22, isLactating: true }
         ],
         createdAt: new Date('2026-02-10T10:15:00.000Z')
       }
@@ -114,12 +85,9 @@ class InMemoryStore {
         farmerName: 'Ramesh Kumar Yadav',
         centerId: 'CENT-EAST-04',
         volumeLiters: 19.5,
-        qualityMetrics: {
-          fat: 4.3,
-          snf: 8.7,
-          clrDensity: 29.5
-        },
+        qualityMetrics: { fat: 4.3, snf: 8.7, clrDensity: 29.5 },
         calculatedPayout: 878.6,
+        biologicalDrift: { fatSnfRatio: 0.494, driftFlag: false, driftSeverity: 'NONE' },
         isFlagged: false,
         flagReason: null,
         receiptHash: 'a718b2c4e9f0182346781293aeb4829103847561a2b3c4d5e6f7a8b9c0d1e2f3',
@@ -134,12 +102,9 @@ class InMemoryStore {
         farmerName: 'Sunita Devi',
         centerId: 'CENT-NORTH-02',
         volumeLiters: 26.0,
-        qualityMetrics: {
-          fat: 6.8,
-          snf: 9.1,
-          clrDensity: 30.8
-        },
+        qualityMetrics: { fat: 6.8, snf: 9.1, clrDensity: 30.8 },
         calculatedPayout: 1912.4,
+        biologicalDrift: { fatSnfRatio: 0.747, driftFlag: false, driftSeverity: 'NONE' },
         isFlagged: false,
         flagReason: null,
         receiptHash: 'c4e9f0182346781293aeb4829103847561a2b3c4d5e6f7a8b9c0d1e2f3a718b2',
@@ -148,7 +113,7 @@ class InMemoryStore {
       }
     ];
 
-    // 3. Seed Batch Manifests (Ready for Chilling Center QC Demo)
+    // 3. Seed Batch Manifests
     this.batches = [
       {
         _id: '65f3c0111111111111111111',
@@ -187,15 +152,14 @@ class InMemoryStore {
           receivedClr: 29.8,
           volumeVariancePercent: -0.36,
           reconciledAt: new Date('2026-08-20T11:45:00.000Z'),
-          qcOfficerId: 'QC-OFFICER-88',
-          status: 'VERIFIED_AT_FACTORY'
+          qcOfficerId: 'QC-OFFICER-88'
         },
         manifestHash: 'b1a09876543210fedcba9876543210abcdef0123456789abcdef012345e4d3c2',
         createdAt: new Date('2026-08-20T08:00:00.000Z')
       }
     ];
 
-    // 4. Seed Alert Logs for Auditor Feed
+    // 4. Seed Alert Logs
     this.alerts = [
       {
         _id: '65f4d0111111111111111111',
@@ -211,8 +175,19 @@ class InMemoryStore {
       }
     ];
 
+    // 5. Seed Demo Users
+    this.users = [
+      { _id: '65f5e0111111111111111111', loginId: 'FRM-DEL-1049', role: 'farmer', name: 'Ramesh Kumar Yadav', linkedFarmerId: 'FRM-DEL-1049', status: 'active' },
+      { _id: '65f5e0222222222222222222', loginId: 'AGT-DEL-104', role: 'agent', name: 'Village Agent 104', linkedFarmerId: null, status: 'active' },
+      { _id: '65f5e0222222222222222223', loginId: 'OPR-CENT-EAST-04', role: 'agent', name: 'East Delhi Aggregation Operator', linkedFarmerId: null, status: 'active' },
+      { _id: '65f5e0333333333333333333', loginId: 'QC-DEL-088', role: 'factory', name: 'QC Officer 088', linkedFarmerId: null, status: 'active' },
+      { _id: '65f5e0333333333333333334', loginId: 'OPR-SILO-MAIN-01', role: 'factory', name: 'Main Silo Plant Operator', linkedFarmerId: null, status: 'active' },
+      { _id: '65f5e0444444444444444444', loginId: 'AUD-DEL-001', role: 'auditor', name: 'Auditor 001', linkedFarmerId: null, status: 'active' },
+      { _id: '65f5e0444444444444444445', loginId: 'AUD-NCT-001', role: 'auditor', name: 'NCT District Safety Auditor', linkedFarmerId: null, status: 'active' }
+    ];
+
     this.initialized = true;
-    console.log('✅ In-Memory Data Store Seeded Successfully with Indian Dairy NDLM profiles.');
+    console.log('✅ In-Memory Seed Store initialized with Indian Dairy NDLM profiles.');
   }
 }
 
@@ -221,60 +196,128 @@ store.seedInitialData();
 
 let isConnectedToMongo = false;
 
+// ─── MongoDB Atlas Connection ────────────────────────────────────────────────
 const connectDB = async () => {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
-    console.log('ℹ️ No MONGODB_URI provided. Running in high-performance in-memory store mode.');
+    console.log('ℹ️  No MONGODB_URI set → running in resilient in-memory mode.');
     return;
   }
 
   try {
+    console.log('🔗 Connecting to MongoDB Atlas...');
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 3000
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 30000
     });
+
     isConnectedToMongo = true;
-    console.log('🚀 Connected to MongoDB Atlas / Cluster successfully.');
-    await seedAuthUsers();
+    console.log('🚀 MongoDB Atlas connected. Cluster: Anveshana');
+
+    // Ensure optimal indexes exist on startup
+    await ensureIndexes();
+
+    // Seed initial reference data if DB is empty
+    await seedMongoData();
+
   } catch (err) {
-    console.warn('⚠️ MongoDB connection attempt timed out or failed. Falling back to persistent in-memory store engine.');
+    console.warn(`⚠️  MongoDB connection failed (${err.message}). Falling back to in-memory store.`);
     isConnectedToMongo = false;
   }
 };
 
-const seedAuthUsers = async () => {
+// ─── Index Verification ──────────────────────────────────────────────────────
+const ensureIndexes = async () => {
+  try {
+    const Farmer = require('../models/Farmer');
+    const MilkLog = require('../models/MilkLog');
+    const Batch = require('../models/Batch');
+    const AuditAlert = require('../models/AuditAlert');
+    const User = require('../models/User');
+
+    await Promise.all([
+      Farmer.createIndexes(),
+      MilkLog.createIndexes(),
+      Batch.createIndexes(),
+      AuditAlert.createIndexes(),
+      User.createIndexes()
+    ]);
+    console.log('✅ MongoDB indexes verified and ensured.');
+  } catch (err) {
+    console.warn('⚠️  Index creation warning:', err.message);
+  }
+};
+
+// ─── Seed MongoDB with Demo Data ─────────────────────────────────────────────
+const seedMongoData = async () => {
   if (!isConnectedToMongo) return;
+  const Farmer = require('../models/Farmer');
+  const User = require('../models/User');
 
-  const usersToSeed = [
-    { loginId: 'FRM-DEL-1049', role: 'farmer', name: 'Ramesh Kumar Yadav', linkedFarmerId: 'FRM-DEL-1049', passwordEnv: 'DEMO_FARMER_PASSWORD' },
-    { loginId: 'AGT-DEL-104', role: 'agent', name: 'Village Agent 104', passwordEnv: 'DEMO_AGENT_PASSWORD' },
-    { loginId: 'QC-DEL-088', role: 'factory', name: 'QC Officer 088', passwordEnv: 'DEMO_FACTORY_PASSWORD' },
-    { loginId: 'AUD-DEL-001', role: 'auditor', name: 'Auditor 001', passwordEnv: 'DEMO_AUDITOR_PASSWORD' }
-  ];
-
-  for (const user of usersToSeed) {
-    const password = process.env[user.passwordEnv];
-    if (!password) {
-      console.warn(`⚠️ Skipping seed for ${user.loginId} - ${user.passwordEnv} not set.`);
-      continue;
-    }
-
-    try {
-      const existingUser = await User.findOne({ loginId: user.loginId });
-      if (!existingUser) {
-        const passwordHash = await bcrypt.hash(password, 10);
-        await User.create({
-          loginId: user.loginId,
-          role: user.role,
-          name: user.name,
-          linkedFarmerId: user.linkedFarmerId || null,
-          passwordHash,
-          status: 'active'
-        });
-        console.log(`✅ Seeded auth user: ${user.loginId} (${user.role})`);
+  // Seed Farmers
+  const farmerCount = await Farmer.countDocuments();
+  if (farmerCount === 0) {
+    await Farmer.insertMany([
+      {
+        farmerCustomId: 'FRM-DEL-1049',
+        name: 'Ramesh Kumar Yadav',
+        phone: '+91 98765 43210',
+        village: 'Alipur Village, Delhi North',
+        upiId: 'ramesh.yadav@okhdfcbank',
+        purityScore: 94.5, purityGrade: 'A+',
+        baseCapacity: 24, dynamicCapacity: 24,
+        cattle: [
+          { earTagId: '100482910384', type: 'Cow', breed: 'Gir', baseDailyYield: 12, isLactating: true },
+          { earTagId: '100482910385', type: 'Cow', breed: 'Gir', baseDailyYield: 12, isLactating: true }
+        ]
+      },
+      {
+        farmerCustomId: 'FRM-DEL-2088',
+        name: 'Sunita Devi',
+        phone: '+91 98112 34567',
+        village: 'Bawana Dairy Cluster, Delhi',
+        upiId: 'sunitadevi@icici',
+        purityScore: 88.0, purityGrade: 'A',
+        baseCapacity: 40, dynamicCapacity: 40,
+        cattle: [
+          { earTagId: '100938475612', type: 'Buffalo', breed: 'Murrah', baseDailyYield: 14, isLactating: true },
+          { earTagId: '100938475613', type: 'Buffalo', breed: 'Murrah', baseDailyYield: 14, isLactating: true },
+          { earTagId: '100938475614', type: 'Cow', breed: 'Sahiwal', baseDailyYield: 12, isLactating: false }
+        ]
+      },
+      {
+        farmerCustomId: 'FRM-DEL-3012',
+        name: 'Harpreet Singh',
+        phone: '+91 97123 45678',
+        village: 'Narela Mandi Cluster, Delhi',
+        upiId: 'harpreet.singh@axl',
+        purityScore: 78.2, purityGrade: 'B',
+        baseCapacity: 44, dynamicCapacity: 44,
+        cattle: [
+          { earTagId: '200119823471', type: 'Cow', breed: 'Holstein Friesian Cross', baseDailyYield: 22, isLactating: true },
+          { earTagId: '200119823472', type: 'Cow', breed: 'Jersey Cross', baseDailyYield: 22, isLactating: true }
+        ]
       }
-    } catch (error) {
-      console.error(`❌ Error seeding ${user.loginId}:`, error.message);
-    }
+    ]);
+    console.log('✅ Seeded 3 demo farmers into MongoDB.');
+  }
+
+  // Seed Users
+  const userCount = await User.countDocuments();
+  if (userCount === 0) {
+    const defaultPassword = process.env.DEMO_DEFAULT_PASSWORD || 'demo';
+    const passwordHash = crypto.createHash('sha256').update(defaultPassword + '_anveshana_salt').digest('hex');
+
+    await User.insertMany([
+      { loginId: 'FRM-DEL-1049', role: 'farmer', name: 'Ramesh Kumar Yadav', linkedFarmerId: 'FRM-DEL-1049', passwordHash, status: 'active' },
+      { loginId: 'AGT-DEL-104', role: 'agent', name: 'Village Agent 104', passwordHash, status: 'active' },
+      { loginId: 'OPR-CENT-EAST-04', role: 'agent', name: 'East Delhi Operator', passwordHash, status: 'active' },
+      { loginId: 'QC-DEL-088', role: 'factory', name: 'QC Officer 088', passwordHash, status: 'active' },
+      { loginId: 'OPR-SILO-MAIN-01', role: 'factory', name: 'Main Silo Operator', passwordHash, status: 'active' },
+      { loginId: 'AUD-DEL-001', role: 'auditor', name: 'District Auditor 001', passwordHash, status: 'active' },
+      { loginId: 'AUD-NCT-001', role: 'auditor', name: 'NCT Safety Auditor', passwordHash, status: 'active' }
+    ]);
+    console.log('✅ Seeded 7 demo users into MongoDB (password: "demo").');
   }
 };
 

@@ -4,10 +4,16 @@ let socketInstance = null;
 
 export function getSocket() {
   if (!socketInstance) {
-    socketInstance = io(window.location.origin, {
+    // Try current origin, fallback to http://localhost:5000 directly
+    const socketUrl = window.location.hostname === 'localhost' && window.location.port !== '5000'
+      ? 'http://localhost:5000'
+      : window.location.origin;
+
+    socketInstance = io(socketUrl, {
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
-      autoConnect: true
+      autoConnect: true,
+      transports: ['websocket', 'polling']
     });
 
     socketInstance.on('connect', () => {
